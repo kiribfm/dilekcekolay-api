@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    container_name: dilekce_api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env.prod
+    volumes:
+      - uploads:/var/www/dilekce/uploads
+      - temp:/var/www/dilekce/temp
+      - pdfs:/var/www/dilekce/pdfs
+      - logs:/var/log/dilekce
+    depends_on:
+      - db
+    restart: always
+    networks:
+      - dilekce_network
+
+  db:
+    image: postgres:13
+    container_name: dilekce_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - .env.prod
+    environment:
+      - POSTGRES_DB=dilekce
+      - POSTGRES_USER=dilekce_user
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    restart: always
+    networks:
+      - dilekce_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: dilekce_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - api
+    restart: always
+    networks:
+      - dilekce_network
+
+volumes:
+  postgres_data:
+  uploads:
+  temp:
+  pdfs:
+  logs:
+
+networks:
+  dilekce_network:
+    driver: bridge 
